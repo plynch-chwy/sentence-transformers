@@ -253,7 +253,14 @@ class SentenceTransformer(nn.Sequential):
         pool['output'].close()
 
 
-    def encode_multi_process(self, sentences: List[str], pool: Dict[str, object], batch_size: int = 32, chunk_size: int = None):
+    def encode_multi_process(
+            self,
+            sentences: List[str],
+            pool: Dict[str, object],
+            batch_size: int = 32,
+            chunk_size: int = None,
+            convert_to_tensor: bool = False
+        ):
         """
         This method allows to run encode() on multiple GPUs. The sentences are chunked into smaller packages
         and sent to individual processes, which encode these on the different GPUs. This method is only suitable
@@ -263,7 +270,9 @@ class SentenceTransformer(nn.Sequential):
         :param pool: A pool of workers started with SentenceTransformer.start_multi_process_pool
         :param batch_size: Encode sentences with batch size
         :param chunk_size: Sentences are chunked and sent to the individual processes. If none, it determine a sensible size.
-        :return: Numpy matrix with all embeddings
+        :param convert_to_tensor: If true, you get one large tensor as return.
+        :return:
+           By default, a Numpy matrix with all embeddings. If convert_to_tensor, a stacked tensor is returned.
         """
 
         if chunk_size is None:
@@ -288,7 +297,11 @@ class SentenceTransformer(nn.Sequential):
 
         output_queue = pool['output']
         results_list = sorted([output_queue.get() for _ in range(last_chunk_id)], key=lambda x: x[0])
-        embeddings = np.concatenate([result[1] for result in results_list])
+
+        if convert_to_tensor:
+            embeddings = torch.stack([result[1] for result in results_list])
+        else:
+            embeddings = np.concatenate([result[1] for result in results_list])
         return embeddings
 
     @staticmethod
