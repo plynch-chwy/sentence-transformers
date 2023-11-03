@@ -297,7 +297,7 @@ class SentenceTransformer(nn.Sequential):
         output_queue = pool['output']
         results_list = sorted([output_queue.get() for _ in range(last_chunk_id)], key=lambda x: x[0])
 
-        embeddings = torch.stack([result[1] for result in results_list])
+        embeddings = torch.concatenate([result[1] for result in results_list])
         return embeddings
 
     @staticmethod
