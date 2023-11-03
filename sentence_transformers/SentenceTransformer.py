@@ -259,7 +259,6 @@ class SentenceTransformer(nn.Sequential):
             pool: Dict[str, object],
             batch_size: int = 32,
             chunk_size: int = None,
-            convert_to_tensor: bool = False
         ):
         """
         This method allows to run encode() on multiple GPUs. The sentences are chunked into smaller packages
@@ -298,10 +297,7 @@ class SentenceTransformer(nn.Sequential):
         output_queue = pool['output']
         results_list = sorted([output_queue.get() for _ in range(last_chunk_id)], key=lambda x: x[0])
 
-        if convert_to_tensor:
-            embeddings = torch.stack([result[1] for result in results_list])
-        else:
-            embeddings = np.concatenate([result[1] for result in results_list])
+        embeddings = torch.stack([result[1] for result in results_list])
         return embeddings
 
     @staticmethod
@@ -312,7 +308,7 @@ class SentenceTransformer(nn.Sequential):
         while True:
             try:
                 id, batch_size, sentences = input_queue.get()
-                embeddings = model.encode(sentences, device=target_device,  show_progress_bar=False, convert_to_numpy=True, batch_size=batch_size)
+                embeddings = model.encode(sentences, device=target_device,  show_progress_bar=False, convert_to_numpy=False, convert_to_tensor=True, batch_size=batch_size)
                 results_queue.put([id, embeddings])
             except queue.Empty:
                 break
